@@ -4,7 +4,7 @@ from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, De
 from typing import Optional
 from app.schemas.summary_schema import SummarizeRequest, SummarizeResponse
 from app.services.extractor import extract_text_from_pdf, extract_text_from_docx
-from app.services.ai_client import summarize_text_with_groq
+from app.services.ai_client import summarize_text_with_ollama
 from app.utils.file_utils import save_upload_temp, remove_file_silently
 
 router = APIRouter()
@@ -39,8 +39,8 @@ async def summarize(
         if not text or text.strip() == "":
             raise HTTPException(status_code=422, detail="No text could be extracted from the document")
 
-        # Call AI summarizer (Groq)
-        summary = summarize_text_with_groq(text, summary_type=summary_type, max_tokens=max_tokens)
+        # Call AI summarizer (Ollama)
+        summary = summarize_text_with_ollama(text, summary_type=summary_type, max_tokens=max_tokens)
 
         return SummarizeResponse(
             summary=summary,

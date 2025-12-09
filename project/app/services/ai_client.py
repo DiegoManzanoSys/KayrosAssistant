@@ -1,13 +1,13 @@
 import os
 import time
 from typing import List
-import requests
+import ollama
 
-# Configuración para Groq API
-GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+# Configuración para Ollama
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:latest")
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
-# división de texto para evitar límites
+# División de texto para evitar límites
 CHUNK_SIZE_CHARS = 2500
 
 
@@ -54,41 +54,37 @@ def build_prompt(chunk: str, summary_type: str):
     return f"{inst}\n{markdown_note}\n\nTexto:\n{chunk}\n\nResumen:"
 
 
-def call_groq_api(prompt: str, max_tokens: int = 1024) -> str:
+def call_ollama_api(prompt: str, max_tokens: int = 1024) -> str:
     """
-    Llamada correcta a la API de Groq, usando modelos válidos.
+    Llamada a Ollama usando el modelo local llama3.1.
     """
-    if not GROQ_API_KEY:
-        raise RuntimeError("GROQ_API_KEY no está definido en variables de entorno")
-
-    payload = {
-        "model": "groq/compound-mini",  
-        "messages": [
-            {"role": "user", "content": prompt}
-        ],
-        "max_tokens": max_tokens,
-        "temperature": 0.2,
-    }
-
-    headers = {
-        "Authorization": f"Bearer {GROQ_API_KEY}",
-        "Content-Type": "application/json",
-    }
-
-    resp = requests.post(GROQ_API_URL, json=payload, headers=headers, timeout=1000)
-
-    if resp.status_code != 200:
-        raise RuntimeError(f"Groq API error: {resp.status_code} - {resp.text}")
-
-    data = resp.json()
-
     try:
-        return data["choices"][0]["message"]["content"]
-    except:
-        raise RuntimeError(f"Formato inesperado de respuesta: {data}")
+        # Configurar cliente de Ollama
+        client = ollama.Client(host=OLLAMA_BASE_URL)
+        
+        # Realizar la llamada al modelo
+        response = client.chat(
+            model=OLLAMA_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            options={
+                "num_predict": max_tokens,
+                "temperature": 0.2,
+            }
+        )
+        
+        # Extraer el contenido de la respuesta
+        return response['message']['content']
+        
+    except Exception as e:
+        raise RuntimeError(f"Ollama API error: {str(e)}")
 
 
-def summarize_text_with_groq(
+def summarize_text_with_ollama(
         text: str,
         summary_type: str = "general",
         max_tokens: int = 1024
@@ -103,10 +99,10 @@ def summarize_text_with_groq(
         prompt = build_prompt(chunk, summary_type)
 
         try:
-            partial = call_groq_api(prompt, max_tokens=max_tokens)
+            partial = call_ollama_api(prompt, max_tokens=max_tokens)
         except Exception:
             time.sleep(1)
-            partial = call_groq_api(prompt, max_tokens=max_tokens)
+            partial = call_ollama_api(prompt, max_tokens=max_tokens)
 
         partial_summaries.append(partial.strip())
 
@@ -124,6 +120,6 @@ def summarize_text_with_groq(
         f"{combined}\n\nResumen final:"
     )
 
-    final = call_groq_api(final_prompt, max_tokens=max_tokens)
+    final = call_ollama_api(final_prompt, max_tokens=max_tokens)
     markdown = f"""\n## Resumen\n\n{final.strip()}\n"""
     return markdown

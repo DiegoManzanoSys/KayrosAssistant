@@ -27,9 +27,29 @@ if not exist ".env" (
     echo    Copiando desde .env.example...
     copy .env.example .env >nul
     echo.
-    echo ⚠️  IMPORTANTE: Configura tu GROQ_API_KEY en project\.env
+    echo ⚠️  IMPORTANTE: Configura OLLAMA en project\.env
+    echo    - OLLAMA_MODEL=llama3.1:latest
+    echo    - OLLAMA_BASE_URL=http://localhost:11434
     echo.
     pause
+)
+
+REM Verificar que Ollama esté corriendo
+echo 🔍 Verificando Ollama...
+powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:11434/api/tags' -Method GET -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo.
+    echo ⚠️  ADVERTENCIA: No se pudo verificar Ollama automáticamente
+    echo    Si Ollama está corriendo, puedes continuar ^(presiona una tecla^).
+    echo    Si no está corriendo:
+    echo    1. Abre una terminal y ejecuta: ollama serve
+    echo    2. Verifica en: http://localhost:11434
+    echo    3. Descarga el modelo: ollama pull llama3.1:latest
+    echo.
+    echo 💡 Presiona cualquier tecla para continuar de todas formas...
+    pause >nul
+) else (
+    echo ✓ Ollama está corriendo en http://localhost:11434
 )
 
 REM Instalar dependencias si es necesario
@@ -41,6 +61,18 @@ if not exist "venv\Lib\site-packages\fastapi\" (
 ) else (
     echo ✓ Dependencias del backend ya instaladas
 )
+
+REM Verificar que ollama esté instalado
+call venv\Scripts\activate.bat
+python -c "import ollama" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo 📥 Instalando librería ollama...
+    pip install ollama
+    echo ✓ Librería ollama instalada
+) else (
+    echo ✓ Librería ollama instalada
+)
+call venv\Scripts\deactivate.bat
 
 echo.
 echo ═══════════════════════════════════════════════════════
@@ -69,23 +101,28 @@ if not exist "node_modules\" (
 
 echo.
 echo ═══════════════════════════════════════════════════════
-echo 🚀 [3/4] Iniciando Backend (FastAPI)...
+echo 🚀 [3/4] Iniciando Backend (FastAPI con Hot Reload)...
 echo ═══════════════════════════════════════════════════════
 cd /d "%ROOT_DIR%\project"
 
-REM Iniciar backend en una nueva ventana
-start "ResumeAI Backend - FastAPI" cmd /k "cd /d "%ROOT_DIR%\project" && venv\Scripts\activate.bat && echo ✓ Backend iniciado en http://localhost:8000 && echo ✓ Documentación en http://localhost:8000/docs && echo. && uvicorn app.main:app --reload --port 8000"
+REM Crear logs directory si no existe
+if not exist "logs\" mkdir logs
 
-echo ✓ Backend iniciándose en segundo plano...
+REM Iniciar backend en una nueva ventana con logs visibles
+start "🔧 Backend - FastAPI [LOGS]" cmd /k "cd /d "%ROOT_DIR%\project" && title 🔧 Backend - FastAPI [LOGS] && color 0A && venv\Scripts\activate.bat && echo. && echo ═══════════════════════════════════════════════════════ && echo    🚀 BACKEND - FastAPI con Hot Reload && echo ═══════════════════════════════════════════════════════ && echo. && echo ✓ URL:  http://localhost:8000 && echo ✓ Docs: http://localhost:8000/docs && echo ✓ Hot Reload: ACTIVADO (--reload) && echo. && echo 📊 Logs en tiempo real: && echo ─────────────────────────────────────────────────────── && echo. && uvicorn app.main:app --reload --port 8000 --log-level info"
+
+echo ✓ Backend iniciándose con hot reload...
 echo   📍 URL: http://localhost:8000
 echo   📚 Docs: http://localhost:8000/docs
+echo   🔄 Hot Reload: ACTIVADO
+echo   📊 Logs: Visibles en ventana "Backend - FastAPI [LOGS]"
 echo.
 echo ⏳ Esperando 5 segundos para que el backend inicie...
 timeout /t 5 /nobreak >nul
 
 echo.
 echo ═══════════════════════════════════════════════════════
-echo 🌐 [4/4] Iniciando Frontend (Next.js)...
+echo 🌐 [4/4] Iniciando Frontend (Next.js con Hot Reload)...
 echo ═══════════════════════════════════════════════════════
 cd /d "%ROOT_DIR%\frontresume"
 
@@ -95,11 +132,13 @@ if exist ".next\" (
     rmdir /s /q .next 2>nul
 )
 
-REM Iniciar frontend en una nueva ventana
-start "ResumeAI Frontend - Next.js" cmd /k "cd /d "%ROOT_DIR%\frontresume" && echo ✓ Frontend iniciado en http://localhost:3000 && echo. && npm run dev"
+REM Iniciar frontend en una nueva ventana con logs visibles
+start "⚛️ Frontend - Next.js [LOGS]" cmd /k "cd /d "%ROOT_DIR%\frontresume" && title ⚛️ Frontend - Next.js [LOGS] && color 0B && echo. && echo ═══════════════════════════════════════════════════════ && echo    🌐 FRONTEND - Next.js con Fast Refresh && echo ═══════════════════════════════════════════════════════ && echo. && echo ✓ URL: http://localhost:3000 && echo ✓ Fast Refresh: ACTIVADO (automático) && echo ✓ TypeScript: Check en tiempo real && echo. && echo 📊 Logs en tiempo real: && echo ─────────────────────────────────────────────────────── && echo. && npm run dev"
 
-echo ✓ Frontend iniciándose en segundo plano...
+echo ✓ Frontend iniciándose con fast refresh...
 echo   📍 URL: http://localhost:3000
+echo   🔄 Fast Refresh: ACTIVADO
+echo   📊 Logs: Visibles en ventana "Frontend - Next.js [LOGS]"
 echo.
 echo ⏳ Esperando 8 segundos para que el frontend compile...
 timeout /t 8 /nobreak >nul
@@ -114,12 +153,22 @@ echo    • Backend:  http://localhost:8000
 echo    • Frontend: http://localhost:3000
 echo    • API Docs: http://localhost:8000/docs
 echo.
-echo 💡 Dos ventanas se han abierto:
-echo    1. ResumeAI Backend - FastAPI  (puerto 8000)
-echo    2. ResumeAI Frontend - Next.js (puerto 3000)
+echo 💡 Dos ventanas CON LOGS se han abierto:
+echo    1. 🔧 Backend - FastAPI [LOGS]  (verde) - Puerto 8000
+echo    2. ⚛️ Frontend - Next.js [LOGS] (azul)  - Puerto 3000
+echo.
+echo 🔄 HOT RELOAD ACTIVADO:
+echo    • Backend:  Cambios en archivos .py se recargan automáticamente
+echo    • Frontend: Fast Refresh detecta cambios en componentes React
+echo.
+echo 📊 LOGS EN TIEMPO REAL:
+echo    • Todas las peticiones HTTP aparecen en la ventana del backend
+echo    • Compilación y errores aparecen en la ventana del frontend
+echo    • TypeScript errors se muestran en tiempo real
 echo.
 echo 🛑 Para detener los servicios:
-echo    • Cierra ambas ventanas
+echo    • Ejecuta stop-all.bat
+echo    • O cierra ambas ventanas de logs
 echo    • O presiona Ctrl+C en cada ventana
 echo.
 echo 🌐 Abriendo navegador...

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import List, Optional
-from app.services.ai_client import call_groq_api, chunk_text, CHUNK_SIZE_CHARS
+from app.services.ai_client import call_ollama_api, chunk_text, CHUNK_SIZE_CHARS
 
 router = APIRouter()
 
@@ -12,7 +12,7 @@ def get_text(text: Optional[str], file: Optional[UploadFile]) -> str:
     return ""
 
 
-def _call_over_chunks(text: str, per_chunk_prompt_fn, combine_prompt_fn: Optional[call_groq_api.__class__] = None):
+def _call_over_chunks(text: str, per_chunk_prompt_fn, combine_prompt_fn: Optional[call_ollama_api.__class__] = None):
     """
     Helper: divide `text` en chunks y llama a `per_chunk_prompt_fn(chunk)` para cada uno.
     - per_chunk_prompt_fn: función(chunk) -> prompt_str
@@ -29,10 +29,10 @@ def _call_over_chunks(text: str, per_chunk_prompt_fn, combine_prompt_fn: Optiona
     for chunk in chunks:
         prompt = per_chunk_prompt_fn(chunk)
         try:
-            resp = call_groq_api(prompt)
+            resp = call_ollama_api(prompt)
         except Exception:
             # un retry simple
-            resp = call_groq_api(prompt)
+            resp = call_ollama_api(prompt)
         partials.append(resp.strip())
 
     if combine_prompt_fn:
@@ -63,12 +63,12 @@ async def extract_keywords(text: Optional[str] = Form(None), file: Optional[Uplo
             "Devuelve el resultado en formato Markdown, como una lista de bullets única y ordenada por relevancia.\n\n"
             f"Listas parciales:\n{joined}\n\nLista única de palabras clave:"
         )
-        return call_groq_api(prompt)
+        return call_ollama_api(prompt)
 
     # Si texto es pequeño, un solo llamado; si no, usar chunking + combinación
     if len(input_text) <= CHUNK_SIZE_CHARS:
         prompt = per_chunk_prompt(input_text)
-        markdown = call_groq_api(prompt)
+        markdown = call_ollama_api(prompt)
     else:
         markdown = _call_over_chunks(input_text, per_chunk_prompt, combine)
 
@@ -93,10 +93,10 @@ async def extract_entities(text: Optional[str] = Form(None), file: Optional[Uplo
             "Devuelve el resultado en formato Markdown con bullets.\n\n"
             f"Listas parciales:\n{joined}\n\nEntidades combinadas:"
         )
-        return call_groq_api(prompt)
+        return call_ollama_api(prompt)
 
     if len(input_text) <= CHUNK_SIZE_CHARS:
-        markdown = call_groq_api(per_chunk_prompt(input_text))
+        markdown = call_ollama_api(per_chunk_prompt(input_text))
     else:
         markdown = _call_over_chunks(input_text, per_chunk_prompt, combine)
 
@@ -120,7 +120,7 @@ async def compare_texts(texts: List[str] = Form(...)):
                     "Resume el siguiente texto en 2-3 oraciones manteniendo puntos clave. Devuelve solo el resumen.\n\n"
                     f"Texto:\n{c}\n\nResumen:"
                 )
-                parts.append(call_groq_api(sum_prompt).strip())
+                parts.append(call_ollama_api(sum_prompt).strip())
             safe_texts.append("\n\n".join(parts))
 
     prompt_safe = (
@@ -128,7 +128,7 @@ async def compare_texts(texts: List[str] = Form(...)):
         + "\n\n".join([f"Texto {i+1}:\n{text}" for i, text in enumerate(safe_texts)])
         + "\n\nResumen de comparación:"
     )
-    markdown = call_groq_api(prompt_safe)
+    markdown = call_ollama_api(prompt_safe)
     return {"markdown": markdown}
 
 @router.post("/question")
@@ -146,7 +146,7 @@ async def question_answer(file: UploadFile = File(...), question: str = Form(...
             f"Responde la siguiente pregunta sobre el texto proporcionado. {markdown_instruction}\n\n"
             f"Texto:\n{text}\n\nPregunta: {question}\n\nRespuesta:"
         )
-        markdown = call_groq_api(prompt)
+        markdown = call_ollama_api(prompt)
         return {"markdown": markdown}
 
     summaries = []
@@ -155,14 +155,14 @@ async def question_answer(file: UploadFile = File(...), question: str = Form(...
             "Resume el siguiente fragmento en 2-3 oraciones, enfocándote en ideas que podrían ayudar a responder una pregunta sobre el documento. Devuelve solo el resumen.\n\n"
             f"Texto:\n{c}\n\nResumen:"
         )
-        summaries.append(call_groq_api(sum_prompt).strip())
+        summaries.append(call_ollama_api(sum_prompt).strip())
 
     combined_summary = "\n\n".join(summaries)
     final_prompt = (
         f"Usando el siguiente resumen combinado del documento, responde la pregunta solicitada. {markdown_instruction}\n\n"
         f"Resumen combinado:\n{combined_summary}\n\nPregunta: {question}\n\nRespuesta:"
     )
-    markdown = call_groq_api(final_prompt)
+    markdown = call_ollama_api(final_prompt)
     return {"markdown": markdown}
 
 @router.post("/topic-modeling")
@@ -192,10 +192,10 @@ async def topic_modeling(text: Optional[str] = Form(None), files: Optional[List[
             "Fusiona y sintetiza las listas parciales de temas en una lista final de temas principales, deduplicando y agregando 1-2 bullets explicativos por tema. Devuelve Markdown.\n\n"
             f"Listas parciales:\n{joined}\n\nTemas finales:"
         )
-        return call_groq_api(prompt)
+        return call_ollama_api(prompt)
 
     if len(joined_text) <= CHUNK_SIZE_CHARS:
-        markdown = call_groq_api(per_chunk_prompt(joined_text))
+        markdown = call_ollama_api(per_chunk_prompt(joined_text))
     else:
         markdown = _call_over_chunks(joined_text, per_chunk_prompt, combine)
 
@@ -218,10 +218,10 @@ async def text_to_bullets(text: str = Form(...)):
             "Combina las siguientes listas parciales de bullets en una única lista concisa de máximo 12 bullets, ordenados por importancia. Devuelve Markdown.\n\n"
             f"Listas parciales:\n{joined}\n\nBullets combinados:"
         )
-        return call_groq_api(prompt)
+        return call_ollama_api(prompt)
 
     if len(text) <= CHUNK_SIZE_CHARS:
-        markdown = call_groq_api(per_chunk_prompt(text))
+        markdown = call_ollama_api(per_chunk_prompt(text))
     else:
         markdown = _call_over_chunks(text, per_chunk_prompt, combine)
 

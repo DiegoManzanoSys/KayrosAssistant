@@ -53,8 +53,16 @@ apiClient.interceptors.response.use(
       case 500:
         apiError.message = 'Error en el servidor. Intenta nuevamente.';
         break;
+      case 504:
+        apiError.message = 'Tiempo de espera agotado. El documento puede ser muy grande o Ollama está procesando lentamente.';
+        break;
       default:
-        apiError.message = error.message || 'Error de conexión';
+        // Manejo especial de errores de timeout de Axios
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+          apiError.message = 'Tiempo de espera agotado. Ollama está tardando mucho en procesar. Intenta con un documento más pequeño.';
+        } else {
+          apiError.message = error.message || 'Error de conexión';
+        }
     }
 
     return Promise.reject(apiError);

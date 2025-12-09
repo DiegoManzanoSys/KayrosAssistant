@@ -41,6 +41,7 @@ export const summarizeDocument = async (
     headers: {
       'Content-Type': 'multipart/form-data',
     },
+    timeout: 300000, // 5 minutos para documentos largos con Ollama
   });
   return response.data;
 };
