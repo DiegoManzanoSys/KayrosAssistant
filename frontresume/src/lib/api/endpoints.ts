@@ -121,7 +121,15 @@ export const askQuestion = async (
   request: QuestionRequest
 ): Promise<MarkdownResponse> => {
   const formData = new FormData();
-  formData.append('file', request.file);
+  
+  if (request.text) {
+    formData.append('text', request.text);
+  }
+  
+  if (request.file) {
+    formData.append('file', request.file);
+  }
+  
   formData.append('question', request.question);
 
   const response = await apiClient.post<MarkdownResponse>('/api/question', formData, {
@@ -145,10 +153,12 @@ export const analyzeTopics = async (
     formData.append('text', request.text);
   }
   
-  if (request.files) {
-    request.files.forEach(file => {
-      formData.append('files', file);
-    });
+  if (request.file) {
+    formData.append('file', request.file);
+  }
+  
+  if (request.num_topics) {
+    formData.append('num_topics', request.num_topics.toString());
   }
 
   const response = await apiClient.post<MarkdownResponse>('/api/topic-modeling', formData, {
@@ -167,7 +177,14 @@ export const textToBullets = async (
   request: TextToBulletsRequest
 ): Promise<MarkdownResponse> => {
   const formData = new FormData();
-  formData.append('text', request.text);
+  
+  if (request.text) {
+    formData.append('text', request.text);
+  }
+  
+  if (request.file) {
+    formData.append('file', request.file);
+  }
 
   const response = await apiClient.post<MarkdownResponse>('/api/text-to-bullets', formData, {
     headers: {

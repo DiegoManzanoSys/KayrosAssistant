@@ -67,11 +67,11 @@ export const SummarizeForm: React.FC<SummarizeFormProps> = ({ onSubmit, isLoadin
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Upload de archivo */}
         <FileUpload
-          accept=".pdf,.docx"
-          onChange={handleFileChange}
-          label="Selecciona tu documento"
+          acceptedFormats=".pdf,.docx"
+          onFileSelect={handleFileChange}
+          selectedFile={file}
           error={fileError || undefined}
-          maxSize={10}
+          maxSizeMB={10}
         />
 
         {file && !fileError && (

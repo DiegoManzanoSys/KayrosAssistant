@@ -1,33 +1,36 @@
 import React from 'react';
 
 interface FileUploadProps {
-  accept?: string;
-  onChange: (file: File | null) => void;
-  label?: string;
+  onFileSelect: (file: File | null) => void;
+  selectedFile: File | null;
+  acceptedFormats?: string;
+  maxSizeMB?: number;
+  disabled?: boolean;
   error?: string;
-  maxSize?: number;
 }
 
 export const FileUpload: React.FC<FileUploadProps> = ({
-  accept,
-  onChange,
-  label = 'Seleccionar archivo',
+  onFileSelect,
+  selectedFile,
+  acceptedFormats = '.pdf,.docx',
+  maxSizeMB = 10,
+  disabled = false,
   error,
-  maxSize = 10,
 }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
-    onChange(file);
+    onFileSelect(file);
   };
 
   return (
     <div className="w-full">
       <label className="block mb-2 text-sm font-medium text-gray-700">
-        {label}
+        Seleccionar archivo ({acceptedFormats})
       </label>
       <input
         type="file"
-        accept={accept}
+        accept={acceptedFormats}
+        disabled={disabled}
         onChange={handleChange}
         className="block w-full text-sm text-gray-500 
           file:mr-4 file:py-2 file:px-4
@@ -38,7 +41,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           cursor-pointer"
       />
       <p className="mt-1 text-xs text-gray-500">
-        Tamaño máximo: {maxSize} MB
+        Tamaño máximo: {maxSizeMB} MB
       </p>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
     </div>

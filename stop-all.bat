@@ -29,6 +29,16 @@ if %errorlevel% equ 0 (
 )
 echo.
 
+REM Detener Ollama
+echo 🤖 Deteniendo Ollama...
+taskkill /F /IM ollama.exe 2>nul
+if %errorlevel% equ 0 (
+    echo ✓ Ollama detenido
+) else (
+    echo ℹ️  Ollama no estaba corriendo
+)
+echo.
+
 REM Liberar puertos si están ocupados
 echo 🔌 Verificando puertos...
 netstat -ano | findstr ":3000" >nul 2>&1
@@ -41,6 +51,12 @@ netstat -ano | findstr ":8000" >nul 2>&1
 if %errorlevel% equ 0 (
     echo ⚠️  Puerto 8000 aún en uso, liberando...
     for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":8000"') do taskkill /F /PID %%a 2>nul
+)
+
+netstat -ano | findstr ":11434" >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ⚠️  Puerto 11434 (Ollama) aún en uso, liberando...
+    for /f "tokens=5" %%a in ('netstat -ano ^| findstr ":11434"') do taskkill /F /PID %%a 2>nul
 )
 
 echo.

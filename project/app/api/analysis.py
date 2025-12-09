@@ -72,7 +72,8 @@ async def extract_keywords(text: Optional[str] = Form(None), file: Optional[Uplo
     else:
         markdown = _call_over_chunks(input_text, per_chunk_prompt, combine)
 
-    return {"markdown": markdown}
+    return {"result": markdown}
+
 async def extract_entities(text: Optional[str] = Form(None), file: Optional[UploadFile] = File(None)):
     """
     Extrae entidades nombradas usando LLM (Groq API). Maneja textos grandes por chunks.
@@ -100,7 +101,7 @@ async def extract_entities(text: Optional[str] = Form(None), file: Optional[Uplo
     else:
         markdown = _call_over_chunks(input_text, per_chunk_prompt, combine)
 
-    return {"markdown": markdown}
+    return {"result": markdown}
 
 @router.post("/compare-texts")
 async def compare_texts(texts: List[str] = Form(...)):
@@ -129,28 +130,32 @@ async def compare_texts(texts: List[str] = Form(...)):
         + "\n\nResumen de comparación:"
     )
     markdown = call_ollama_api(prompt_safe)
-    return {"markdown": markdown}
+    return {"result": markdown}
 
 @router.post("/question")
-async def question_answer(file: UploadFile = File(...), question: str = Form(...)):
+async def question_answer(
+    text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    question: str = Form(...)
+):
     """
-    Responde preguntas sobre el contenido de un documento usando LLM.
+    Responde preguntas sobre el contenido de un documento o texto usando LLM.
     """
+    input_text = get_text(text, file)
     markdown_instruction = "Devuelve el resultado en formato de documento Markdown, bien organizado y visualmente atractivo."
-    content = await file.read()
-    text = content.decode("utf-8", errors="ignore")
 
-    # Si el documento es grande, primero resumimos por chunks y luego respondemos sobre la síntesis
-    if len(text) <= CHUNK_SIZE_CHARS:
+    # Si el texto es pequeño, respondemos directamente
+    if len(input_text) <= CHUNK_SIZE_CHARS:
         prompt = (
             f"Responde la siguiente pregunta sobre el texto proporcionado. {markdown_instruction}\n\n"
-            f"Texto:\n{text}\n\nPregunta: {question}\n\nRespuesta:"
+            f"Texto:\n{input_text}\n\nPregunta: {question}\n\nRespuesta:"
         )
         markdown = call_ollama_api(prompt)
-        return {"markdown": markdown}
+        return {"result": markdown}
 
+    # Si es grande, primero resumimos por chunks y luego respondemos
     summaries = []
-    for c in chunk_text(text):
+    for c in chunk_text(input_text):
         sum_prompt = (
             "Resume el siguiente fragmento en 2-3 oraciones, enfocándote en ideas que podrían ayudar a responder una pregunta sobre el documento. Devuelve solo el resumen.\n\n"
             f"Texto:\n{c}\n\nResumen:"
@@ -163,7 +168,7 @@ async def question_answer(file: UploadFile = File(...), question: str = Form(...
         f"Resumen combinado:\n{combined_summary}\n\nPregunta: {question}\n\nRespuesta:"
     )
     markdown = call_ollama_api(final_prompt)
-    return {"markdown": markdown}
+    return {"result": markdown}
 
 @router.post("/topic-modeling")
 async def topic_modeling(text: Optional[str] = Form(None), files: Optional[List[UploadFile]] = File(None)):
@@ -199,7 +204,7 @@ async def topic_modeling(text: Optional[str] = Form(None), files: Optional[List[
     else:
         markdown = _call_over_chunks(joined_text, per_chunk_prompt, combine)
 
-    return {"markdown": markdown}
+    return {"result": markdown}
 
 @router.post("/text-to-bullets")
 async def text_to_bullets(text: str = Form(...)):
@@ -225,4 +230,4 @@ async def text_to_bullets(text: str = Form(...)):
     else:
         markdown = _call_over_chunks(text, per_chunk_prompt, combine)
 
-    return {"markdown": markdown}
+    return {"result": markdown}

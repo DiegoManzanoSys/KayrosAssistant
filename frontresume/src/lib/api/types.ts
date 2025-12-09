@@ -18,7 +18,7 @@ export interface SummarizeResponse {
 }
 
 export interface MarkdownResponse {
-  markdown: string;
+  result: string;
 }
 
 // ============================================
@@ -48,17 +48,20 @@ export interface CompareTextsRequest {
 }
 
 export interface QuestionRequest {
-  file: File;
+  text?: string;
+  file?: File;
   question: string;
 }
 
 export interface TopicModelingRequest {
   text?: string;
-  files?: File[];
+  file?: File;
+  num_topics?: number;
 }
 
 export interface TextToBulletsRequest {
-  text: string;
+  text?: string;
+  file?: File;
 }
 
 // ============================================

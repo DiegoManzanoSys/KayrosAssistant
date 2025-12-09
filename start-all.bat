@@ -38,18 +38,33 @@ REM Verificar que Ollama esté corriendo
 echo 🔍 Verificando Ollama...
 powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:11434/api/tags' -Method GET -TimeoutSec 5 -UseBasicParsing -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
 if %errorlevel% neq 0 (
+    echo ⚠️  Ollama no está corriendo. Iniciando modelo llama3.1...
     echo.
-    echo ⚠️  ADVERTENCIA: No se pudo verificar Ollama automáticamente
-    echo    Si Ollama está corriendo, puedes continuar ^(presiona una tecla^).
-    echo    Si no está corriendo:
-    echo    1. Abre una terminal y ejecuta: ollama serve
-    echo    2. Verifica en: http://localhost:11434
-    echo    3. Descarga el modelo: ollama pull llama3.1:latest
-    echo.
-    echo 💡 Presiona cualquier tecla para continuar de todas formas...
-    pause >nul
+    
+    REM Iniciar Ollama con el modelo llama3.1 en segundo plano
+    start "🤖 Ollama - llama3.1" cmd /k "title 🤖 Ollama - llama3.1 && color 0D && echo Iniciando Ollama con modelo llama3.1... && echo. && ollama run llama3.1"
+    
+    echo ⏳ Esperando 8 segundos para que Ollama y el modelo carguen...
+    timeout /t 8 /nobreak >nul
+    
+    REM Verificar nuevamente
+    powershell -Command "try { $null = Invoke-WebRequest -Uri 'http://localhost:11434/api/tags' -Method GET -TimeoutSec 3 -UseBasicParsing -ErrorAction Stop; exit 0 } catch { exit 1 }" >nul 2>&1
+    if %errorlevel% neq 0 (
+        echo.
+        echo ❌ ERROR: No se pudo iniciar Ollama automáticamente
+        echo    Por favor:
+        echo    1. Verifica que Ollama esté instalado: ollama --version
+        echo    2. Inicia manualmente en otra terminal: ollama run llama3.1
+        echo    3. Si no tienes el modelo: ollama pull llama3.1:latest
+        echo.
+        pause
+        exit /b 1
+    ) else (
+        echo ✓ Ollama iniciado correctamente en http://localhost:11434
+        echo ✓ Modelo llama3.1 cargado y listo
+    )
 ) else (
-    echo ✓ Ollama está corriendo en http://localhost:11434
+    echo ✓ Ollama ya está corriendo en http://localhost:11434
 )
 
 REM Instalar dependencias si es necesario
@@ -156,6 +171,11 @@ echo.
 echo 💡 Dos ventanas CON LOGS se han abierto:
 echo    1. 🔧 Backend - FastAPI [LOGS]  (verde) - Puerto 8000
 echo    2. ⚛️ Frontend - Next.js [LOGS] (azul)  - Puerto 3000
+echo.
+echo 🤖 Ollama corriendo en segundo plano:
+echo    • Puerto: 11434
+echo    • Modelo: llama3.1:latest
+echo    • Para detenerlo: Cierra "Ollama Service" o ejecuta stop-all.bat
 echo.
 echo 🔄 HOT RELOAD ACTIVADO:
 echo    • Backend:  Cambios en archivos .py se recargan automáticamente
