@@ -3,8 +3,6 @@
 import React, { useRef } from 'react';
 import { Card, MarkdownRenderer, Button } from '@/components/ui';
 import { SummarizeResponse } from '@/lib/api/types';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface SummarizeResultProps {
   result: SummarizeResponse;
@@ -30,75 +28,7 @@ export const SummarizeResult: React.FC<SummarizeResultProps> = ({ result, onRese
     URL.revokeObjectURL(url);
   };
 
-  const handleDownloadPDF = async () => {
-    if (!contentRef.current) return;
 
-    try {
-      // Crear un contenedor temporal con el contenido
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.width = '210mm'; // Ancho A4
-      tempDiv.style.padding = '20mm';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      
-      // Crear contenido con estilos
-      tempDiv.innerHTML = `
-        <div style="margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #3B82F6;">
-          <h1 style="color: #3B82F6; margin: 0 0 10px 0; font-size: 24px;">📄 Resumen de Documento</h1>
-          <p style="margin: 5px 0; color: #666; font-size: 12px;"><strong>Archivo:</strong> ${result.original_filename}</p>
-          <p style="margin: 5px 0; color: #666; font-size: 12px;"><strong>Tipo de resumen:</strong> ${result.summary_type}</p>
-          <p style="margin: 5px 0; color: #666; font-size: 12px;"><strong>Reducción:</strong> ${reductionPercentage}% (${result.length_original} → ${result.length_summary} caracteres)</p>
-        </div>
-        <div style="line-height: 1.6; color: #333; font-size: 11px;">
-          ${contentRef.current.innerHTML}
-        </div>
-      `;
-      
-      document.body.appendChild(tempDiv);
-
-      // Capturar como canvas
-      const canvas = await html2canvas(tempDiv, {
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      } as any);
-
-      // Crear PDF
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Agregar primera página
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      // Agregar páginas adicionales si es necesario
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
-
-      // Descargar
-      pdf.save(`resumen_${result.original_filename.replace(/\.[^/.]+$/, '')}.pdf`);
-      
-      // Limpiar
-      document.body.removeChild(tempDiv);
-    } catch (error) {
-      console.error('Error al generar PDF:', error);
-      alert('Error al generar el PDF. Intenta descargar en formato Markdown.');
-    }
-  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(result.summary);
@@ -128,12 +58,6 @@ export const SummarizeResult: React.FC<SummarizeResultProps> = ({ result, onRese
               className="px-4 py-2 bg-white border-2 border-gray-300 hover:border-green-500 text-gray-700 hover:text-green-600 font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-sm hover:shadow"
             >
               <span>📝</span> MD
-            </button>
-            <button 
-              onClick={handleDownloadPDF}
-              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 shadow-md hover:shadow-lg"
-            >
-              <span>📄</span> PDF
             </button>
             <button 
               onClick={onReset}
