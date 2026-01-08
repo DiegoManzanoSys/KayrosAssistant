@@ -18,13 +18,18 @@ export default function SummarizePage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+    <div className="max-w-6xl mx-auto px-4">
+      <div className="mb-8 text-center animate-fadeIn">
+        <div className="inline-block mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg mx-auto transform hover:scale-110 transition-transform duration-300">
+            📄
+          </div>
+        </div>
+        <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">
           Resumir Documentos
         </h1>
-        <p className="text-gray-600">
-          Sube un archivo PDF o DOCX y genera un resumen inteligente con IA
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Sube un archivo PDF o DOCX y genera un resumen inteligente con IA en segundos
         </p>
       </div>
 
