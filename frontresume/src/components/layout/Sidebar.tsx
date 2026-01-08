@@ -13,12 +13,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: '🏠' },
   { href: '/summarize', label: 'Resumir', icon: '📄' },
-  { href: '/keywords', label: 'Palabras Clave', icon: '🔑' },
-  { href: '/entities', label: 'Entidades', icon: '🏢' },
-  { href: '/compare', label: 'Comparar', icon: '🔄' },
-  { href: '/question', label: 'Preguntas', icon: '❓' },
-  { href: '/topics', label: 'Temas', icon: '📊' },
-  { href: '/bullets', label: 'A Bullets', icon: '📝' },
 ];
 
 export const Sidebar: React.FC = () => {
